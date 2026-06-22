@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Klientea — Call Console</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230E7361'/%3E%3Ccircle cx='32' cy='32' r='13' fill='%23FAFAF7'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{--ink:#0B1F33;--accent:#0E7361;--accent2:#0a5a4d;--bg:#F4F6F5;--panel:#fff;--line:#e3e6e4;--muted:#5b6b73;--text:#16242f;--warn:#b45309;--ok:#0E7361;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;font-size:15px}
+  .top{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:18px}
+  .logo .m{width:26px;height:26px;border-radius:8px;background:var(--accent);display:grid;place-items:center}
+  .logo .m span{width:10px;height:10px;border-radius:50%;background:var(--bg)}
+  .top .tag{margin-left:auto;font-size:12px;color:#9fb1bd;font-weight:500}
+  .wrap{max-width:1180px;margin:0 auto;padding:18px;display:grid;grid-template-columns:330px 1fr;gap:18px;align-items:start}
+  @media(max-width:880px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:12px}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--ink);margin:10px 0 4px}
+  input,textarea{width:100%;font-family:inherit;font-size:14px;color:var(--text);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff}
+  input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,115,97,.12)}
+  textarea{resize:vertical;min-height:64px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .step{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;background:#fff}
+  .step>.h{display:flex;align-items:center;gap:10px;padding:12px 15px;cursor:pointer;font-weight:700;color:var(--ink);background:#fafbfb}
+  .step>.h .n{flex:0 0 auto;width:24px;height:24px;border-radius:7px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:13px}
+  .step>.h .chev{margin-left:auto;color:var(--muted);transition:.2s;font-size:13px}
+  .step.open>.h .chev{transform:rotate(180deg)}
+  .step>.b{padding:0 15px;max-height:0;overflow:hidden;transition:max-height .25s ease}
+  .step.open>.b{max-height:1600px;padding:4px 15px 16px}
+  .say{background:#eef6f3;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 12px;margin:8px 0;font-size:14px;color:#143}
+  .say em{color:var(--muted)}
+  ul.q{list-style:none;margin:6px 0}
+  ul.q li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:14px}
+  ul.q li input{width:auto;margin-top:3px}
+  .pill{display:inline-block;background:rgba(14,115,97,.1);color:var(--accent2);font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;margin:2px 4px 2px 0}
+  .gen{background:var(--ink);color:#eaf2ef;border-radius:10px;padding:13px 14px;font-size:14.5px;margin-top:8px;white-space:pre-wrap}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-weight:600;font-size:13.5px;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--ink)}
+  .btn.p{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.p:hover{background:var(--accent2)}
+  .btn.sm{padding:6px 10px;font-size:12.5px}
+  .obj{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden}
+  .obj>.oh{padding:10px 13px;cursor:pointer;font-weight:600;font-size:13.5px;display:flex;gap:8px;align-items:center}
+  .obj>.oh .chev{margin-left:auto;color:var(--muted);font-size:12px;transition:.2s}
+  .obj.open>.oh .chev{transform:rotate(180deg)}
+  .obj>.ob{max-height:0;overflow:hidden;transition:max-height .2s}
+  .obj.open>.ob{max-height:400px;padding:0 13px 12px}
+  .outcomes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .oc{padding:9px 12px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink)}
+  .oc.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .reco{font-size:13px;color:var(--muted);margin:6px 0}
+  .reco b{color:var(--accent2)}
+  .copied{color:var(--ok);font-size:12.5px;font-weight:600;margin-left:8px;opacity:0;transition:.2s}
+  .copied.show{opacity:1}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .calc label{margin-top:6px}
+</style>
+</head>
+<body>
+<div class="top">
+  <span class="logo"><span class="m"><span></span></span>Klientea</span>
+  <span style="font-weight:600">Call Console</span>
+  <span class="tag">Script d'appel guidé · detailing</span>
+</div>
+
+<div class="wrap">
+
+  <!-- LEFT : fiche + calcul -->
+  <div>
+    <div class="card">
+      <h2>Fiche prospect</h2>
+      <label>Société</label><input id="f_soc" placeholder="Nom de l'entreprise" />
+      <div class="row">
+        <div><label>Ville</label><input id="f_ville" placeholder="Ville" /></div>
+        <div><label>Prénom contact</label><input id="f_prenom" placeholder="Si connu" /></div>
+      </div>
+      <div class="row">
+        <div><label>Note Google</label><input id="f_note" type="number" step="0.1" placeholder="4.6" /></div>
+        <div><label>Nb avis</label><input id="f_avis" type="number" placeholder="12" /></div>
+      </div>
+      <p class="hint" id="angleHint"></p>
+    </div>
+
+    <div class="card calc">
+      <h2>Calculateur de douleur</h2>
+      <label>Appels reçus / semaine (estimé avec lui)</label><input id="c_app" type="number" value="15" />
+      <label>% d'appels manqués quand il bosse</label><input id="c_pct" type="number" value="30" />
+      <label>Panier moyen d'une prestation (€)</label><input id="c_panier" type="number" value="250" />
+      <div id="painOut" class="gen" style="margin-top:12px"></div>
+      <button class="btn p sm" style="margin-top:10px" onclick="copyText('painOut',this)">Copier la reformulation</button>
+      <span class="copied" id="cp_pain">Copié ✓</span>
+    </div>
+  </div>
+
+  <!-- RIGHT : script + objections + issue -->
+  <div>
+    <div class="card">
+      <h2>Le script (clique pour dérouler)</h2>
+
+      <div class="step open"><div class="h" onclick="tog(this)"><span class="n">1</span>Accroche · gagner 20 secondes<span class="chev">▼</span></div>
+        <div class="b">
+          <div class="say">« Bonjour <b id="s_prenom1">[Prénom]</b>, [Toi] de Klientea. Je vais être direct pour ne pas vous faire perdre de temps — vous avez 30 secondes ? … Je travaille avec des pros du detailing, et j'appelle pour une raison simple : <b>quand vous êtes les mains dans la voiture, qui répond au téléphone ?</b> »</div>
+          <div class="say"><em>Variante curiosité :</em> « Sur une semaine, vous diriez que vous ratez combien d'appels parce que vous êtes en prestation ? … C'est exactement le sujet de mon appel. »</div>
+        </div>
+      </div>
+
+      <div class="step"><div class="h" onclick="tog(this)"><span class="n">2</span>Questions qualifiantes<span class="chev">▼</span></div>
+        <div class="b">
+          <ul class="q">
+            <li><input type="checkbox"><span>Quand ça sonne et que vous êtes en cabine/au polish, il se passe quoi ?</span></li>
+            <li><input type="checkbox"><span>Vous prenez vos RDV comment — téléphone, message, les deux ?</span></li>
+            <li><input type="checkbox"><span>Les appels qui sonnent dans le vide, vous les rappelez tous ?</span></li>
+            <li><input type="checkbox"><span>Les gens qui ne laissent pas de message, vous les recontactez ?</span></li>
+            <li><input type="checkbox"><span>Les RDV oubliés / clients qui ne viennent pas, ça arrive souvent ?</span></li>
+            <li><input type="checkbox"><span>Les avis Google, vous en demandez systématiquement ?</span></li>
+            <li><input type="checkbox"><span>Un detailing complet, c'est quel prix moyen chez vous ?</span></li>
+          </ul>
+          <p class="hint">→ Note ses chiffres dans le calculateur à gauche, ils servent à l'étape 3.</p>
+        </div>
+      </div>
+
+      <div class="step"><div class="h" onclick="tog(this)"><span class="n">3</span>Reformulation de la douleur<span class="chev">▼</span></div>
+        <div class="b">
+          <p class="hint">Renvoie-lui SA réalité avec SES chiffres, puis tais-toi et laisse-le dire « oui, exactement ».</p>
+          <div id="painOut2" class="gen"></div>
+        </div>
+      </div>
+
+      <div class="step"><div class="h" onclick="tog(this)"><span class="n">4</span>Pont vers la solution (1 phrase)<span class="chev">▼</span></div>
+        <div class="b">
+          <div class="say">« C'est précisément ce qu'on fait chez Klientea : <b>on vous aide à ne plus perdre les appels entrants, à confirmer automatiquement les rendez-vous, et à récupérer plus d'avis Google après chaque prestation</b> — sans embaucher personne. »</div>
+        </div>
+      </div>
+
+      <div class="step"><div class="h" onclick="tog(this)"><span class="n">5</span>Proposer la démo (objectif unique)<span class="chev">▼</span></div>
+        <div class="b">
+          <div class="say">« Le mieux, c'est que je vous le montre : 10 minutes, je vous fais une démo où l'IA prend un vrai rendez-vous, vous le voyez tomber dans l'agenda en direct. <b>Vous préférez demain en matinée, ou jeudi en fin de journée ?</b> »</div>
+          <p class="hint">Verrouille le créneau → confirme le numéro → annonce un SMS/mail de confirmation immédiat.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Objections</h2>
+      <div id="objs"></div>
+    </div>
+
+    <div class="card">
+      <h2>Issue de l'appel</h2>
+      <div class="outcomes" id="ocs"></div>
+      <p class="reco" id="recoStage"></p>
+      <label>Note d'appel (à coller dans GHL)</label>
+      <textarea id="note" style="min-height:90px"></textarea>
+      <div style="margin-top:10px">
+        <button class="btn p sm" onclick="copyText('note',this)">Copier la note</button>
+        <span class="copied" id="cp_note">Copié ✓</span>
+        <button class="btn sm" style="margin-left:6px" onclick="resetCall()">Nouvel appel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function tog(h){h.parentElement.classList.toggle('open')}
+function copyText(id,btn){const t=document.getElementById(id).innerText||document.getElementById(id).value;navigator.clipboard.writeText(t.trim());const tip=id==='note'?'cp_note':'cp_pain';const e=document.getElementById(tip);if(e){e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1400)}}
+
+const f={soc:'f_soc',ville:'f_ville',prenom:'f_prenom',note:'f_note',avis:'f_avis',app:'c_app',pct:'c_pct',panier:'c_panier'};
+function val(k){return document.getElementById(f[k]).value}
+function num(k){return parseFloat(val(k))||0}
+
+function refresh(){
+  const prenom=val('prenom').trim()||'[Prénom]';
+  document.getElementById('s_prenom1').textContent=prenom;
+  // angle hint
+  const avis=num('avis');const hint=document.getElementById('angleHint');
+  if(val('avis')!==''){hint.textContent = avis<15 ? '🎯 Peu d\'avis → excellent angle : « les avis Google vous ramèneraient des clients ».' : 'Déjà bien noté → angle : « ne perdez plus les appels qui font tourner cette réputation ».';}
+  else hint.textContent='';
+  // pain calc
+  const app=num('app'),pct=num('pct'),panier=num('panier');
+  const missWeek=app*pct/100;
+  const missMonth=missWeek*4.3;
+  const recov=Math.max(1,Math.round(missMonth*0.15));
+  const lost=Math.round(recov*panier);
+  const soc=val('soc').trim();
+  let txt=`« Donc si je résume : vous êtes souvent seul, les mains dans la voiture, et quand ça sonne à ce moment-là l'appel part en absence. Vous m'avez dit en rater à peu près ${Math.round(missWeek)} par semaine. À ${panier} € la prestation, même en n'en récupérant que ${recov} par mois, c'est ~${lost.toLocaleString('fr-FR')} € qui filent chez le confrère qui a décroché. Plus les RDV oubliés et les avis Google que vous n'avez pas le temps de demander. C'est bien ça ? »`;
+  document.getElementById('painOut').textContent=txt;
+  document.getElementById('painOut2').textContent=txt;
+  buildNote();
+}
+Object.values(f).forEach(id=>document.getElementById(id).addEventListener('input',refresh));
+
+// objections
+const OBJ=[
+ ['« J\'ai pas le temps »','Justement — c\'est le temps que vous passez à rappeler les gens, ou que vous perdez parce qu\'ils sont déjà partis ailleurs, que ça vous fait récupérer. 10 min de démo, pas plus. Demain matin ou jeudi ?'],
+ ['« C\'est cher / ça coûte combien ? »','Je vous donne le détail en démo, mais pour situer : si l\'outil vous récupère un seul detailing par mois, il est déjà rentabilisé plusieurs fois. Et c\'est sans engagement. On se cale 10 min ?'],
+ ['« Je réponds moi-même »','C\'est vrai quand vous êtes dispo. Mais les mains dans la mousse ou sous une voiture, c\'est là que partent les clients. L\'IA décroche juste quand vous, vous ne pouvez pas.'],
+ ['« Une IA, mes clients vont détester »','C\'est ce que pensent presque tous mes clients… avant la démo. Écoutez-la 2 min, vous me direz franchement. Si ça ne vous plaît pas, on en reste là.'],
+ ['« Envoyez-moi un mail »','Avec plaisir, je vous l\'envoie. Mais ça parle 100x mieux en démo : laissez-moi 10 min, et je vous envoie tout par écrit juste après. Demain matin ?'],
+ ['« Faut que j\'en parle à mon associé »','Très bien — autant que vous voyiez la démo tous les deux en même temps. On trouve un créneau où vous êtes ensemble ?'],
+];
+document.getElementById('objs').innerHTML=OBJ.map(o=>`<div class="obj"><div class="oh" onclick="this.parentElement.classList.toggle('open')">${o[0]}<span class="chev">▼</span></div><div class="ob"><div class="say">${o[1]}</div></div></div>`).join('');
+
+// outcomes
+const OC=[
+ ['Pas de réponse','Tenté – pas de réponse','Pas de réponse. Déplacé en « Tenté – pas de réponse » (séquence relance déclenchée).'],
+ ['Messagerie','Tenté – pas de réponse','Messagerie. Message laissé + SMS de relance.'],
+ ['Rappel programmé','Conversation en cours','Demande à être rappelé. À recontacter : '],
+ ['Pas intéressé','Perdu','Pas intéressé aujourd\'hui. Motif : '],
+ ['Démo calée ✅','Démo planifiée','DÉMO CALÉE le : '],
+ ['Gagné 🎉','Gagné','Client signé ! Onboarding à lancer.'],
+];
+let curOC=null;
+document.getElementById('ocs').innerHTML=OC.map((o,i)=>`<div class="oc" data-i="${i}" onclick="pickOC(${i})">${o[0]}</div>`).join('');
+function pickOC(i){curOC=i;document.querySelectorAll('.oc').forEach(e=>e.classList.toggle('active',+e.dataset.i===i));document.getElementById('recoStage').innerHTML='Étape GHL recommandée : <b>'+OC[i][1]+'</b>';buildNote();}
+function buildNote(){
+  const soc=val('soc').trim();const d=new Date().toLocaleDateString('fr-FR');
+  let head=(soc?soc+' — ':'')+d+'\\n';
+  let body=curOC!==null?OC[curOC][2]:'';
+  document.getElementById('note').value=head+body;
+}
+function resetCall(){curOC=null;document.querySelectorAll('.oc').forEach(e=>e.classList.remove('active'));document.getElementById('recoStage').textContent='';['soc','ville','prenom','note','avis'].forEach(k=>document.getElementById(f[k]).value='');document.getElementById('angleHint').textContent='';refresh();}
+refresh();
+</script>
+</body>
+</html>
