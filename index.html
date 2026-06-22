@@ -219,7 +219,7 @@ document.getElementById('ocs').innerHTML=OC.map((o,i)=>`<div class="oc" data-i="
 function pickOC(i){curOC=i;document.querySelectorAll('.oc').forEach(e=>e.classList.toggle('active',+e.dataset.i===i));document.getElementById('recoStage').innerHTML='Étape GHL recommandée : <b>'+OC[i][1]+'</b>';buildNote();}
 function buildNote(){
   const soc=val('soc').trim();const d=new Date().toLocaleDateString('fr-FR');
-  let head=(soc?soc+' — ':'')+d+'\\n';
+  let head=(soc?soc+' — ':'')+d+String.fromCharCode(10);
   let body=curOC!==null?OC[curOC][2]:'';
   document.getElementById('note').value=head+body;
 }
