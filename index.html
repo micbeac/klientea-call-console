@@ -59,8 +59,6 @@
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
   .qitem{padding:7px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:5px;cursor:pointer;font-size:13px}
   .qitem:hover{border-color:var(--accent)}
-  .callbar{display:flex;align-items:center;gap:8px;margin-top:8px}
-  .callbar a{flex:1;justify-content:center}
 </style>
 </head>
 <body>
@@ -83,7 +81,17 @@
       <h2>Fiche prospect</h2>
       <label>Société</label><input id="f_soc" placeholder="Nom de l'entreprise" />
       <label>Téléphone</label><input id="f_phone" placeholder="+32 …" />
-      <div class="callbar"><a id="phoneLink" class="btn p sm" href="#" style="display:none">📞 Appeler</a></div>
+      <div style="margin-top:8px"><a id="phoneLink" class="btn p sm" href="#" style="display:none">📞 Appeler</a></div>
+      <label>Site web</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="f_site" placeholder="—" style="flex:1" />
+        <a id="siteLink" class="btn sm" href="#" target="_blank" rel="noopener" style="display:none;white-space:nowrap">Ouvrir ↗</a>
+      </div>
+      <label>Catégorie</label><input id="f_cat" placeholder="—" />
+      <div style="margin-top:6px">
+        <button class="btn sm" id="horsBtn" style="display:none;border-color:var(--warn);color:var(--warn)" onclick="markOut()">🚫 Marquer hors cible</button>
+        <span class="copied" id="cp_hors">Marqué hors cible ✓</span>
+      </div>
       <div class="row">
         <div><label>Ville</label><input id="f_ville" placeholder="Ville" /></div>
         <div><label>Prénom contact</label><input id="f_prenom" placeholder="Si connu" /></div>
@@ -227,12 +235,15 @@ function buildNote(){
   const body=curOC!==null?OC[curOC][2]:'';
   document.getElementById('note').value=head+body;
 }
-function resetCall(){curOC=null;document.querySelectorAll('.oc').forEach(e=>e.classList.remove('active'));document.getElementById('recoStage').textContent='';['soc','ville','prenom','note','avis'].forEach(k=>document.getElementById(f[k]).value='');document.getElementById('f_phone').value='';document.getElementById('phoneLink').style.display='none';document.getElementById('angleHint').textContent='';GHL.contactId=null;GHL.oppId=null;refresh();}
+function resetCall(){curOC=null;document.querySelectorAll('.oc').forEach(e=>e.classList.remove('active'));document.getElementById('recoStage').textContent='';['soc','ville','prenom','note','avis'].forEach(k=>document.getElementById(f[k]).value='');document.getElementById('f_phone').value='';document.getElementById('f_site').value='';document.getElementById('f_cat').value='';document.getElementById('phoneLink').style.display='none';document.getElementById('siteLink').style.display='none';document.getElementById('horsBtn').style.display='none';document.getElementById('angleHint').textContent='';GHL.contactId=null;GHL.oppId=null;refresh();}
 
 // ===== Mode connecté GHL =====
 const GHL={contactId:null,oppId:null,stages:{}};
 const CF={note:'wfxLGEpLdu8Rb1GnARtg',avis:'EgDlNlTp1ZeTgSqqhX4g'};
 const OUTCOME_STAGE={0:'pas de réponse',1:'pas de réponse',2:'conversation',3:'perdu',4:'démo planifiée',5:'gagné'};
+let CATMAP={};
+fetch('/categories.json').then(r=>r.json()).then(d=>{CATMAP=d||{};}).catch(()=>{});
+function digits(s){return (s||'').replace(/\D/g,'');}
 function findStage(part){const e=Object.entries(GHL.stages).find(([n])=>n.toLowerCase().includes(part));return e?e[1]:null;}
 async function gGet(qs){const r=await fetch('/api/ghl?'+qs);return r.json();}
 async function gPost(b){const r=await fetch('/api/ghl',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json();}
@@ -253,6 +264,16 @@ async function loadQueue(){
       d.textContent=o.name||c.name||'(sans nom)';d.onclick=function(){pickProspect(o);};box.appendChild(d);});
     st.textContent=opps.length+' prospect(s) à appeler.';
   }catch(e){st.textContent='Erreur : '+e;}
+}
+function fillExtra(phone){
+  const info=CATMAP[digits(phone)]||{};
+  const site=info.w||'';const cat=info.c||'';
+  document.getElementById('f_site').value=site;
+  document.getElementById('f_cat').value=cat;
+  const sl=document.getElementById('siteLink');
+  if(site){let url=site;if(!/^https?:\/\//i.test(url))url='https://'+url;sl.href=url;sl.style.display='';}
+  else{sl.style.display='none';}
+  document.getElementById('horsBtn').style.display=GHL.contactId?'':'none';
 }
 async function pickProspect(o){const c=o.contact||{};const st=document.getElementById('ghlStatus');
   document.getElementById('f_soc').value=o.name||c.name||'';
@@ -278,6 +299,7 @@ async function pickProspect(o){const c=o.contact||{};const st=document.getElemen
   const link=document.getElementById('phoneLink');
   if(phone){link.href='tel:'+phone;link.textContent='📞 Appeler '+phone;link.style.display='';}
   else{link.style.display='none';}
+  fillExtra(phone);
   refresh();
   st.textContent='Fiche chargée : '+(o.name||c.name||'');
 }
@@ -289,6 +311,14 @@ async function writeBack(){const st=document.getElementById('ghlStatus');
     const e=document.getElementById('cp_ghl');e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1600);
     st.textContent='✓ Note + étape écrites dans GHL.';
   }catch(err){st.textContent='Erreur écriture : '+err;}}
+async function markOut(){const st=document.getElementById('ghlStatus');
+  if(!GHL.contactId){st.textContent='Aucune fiche GHL chargée.';return;}
+  try{
+    await gPost({action:'tag',contactId:GHL.contactId,tags:['hors-cible']});
+    const sid=findStage('perdu');if(GHL.oppId&&sid)await gPost({action:'stage',opportunityId:GHL.oppId,stageId:sid});
+    const e=document.getElementById('cp_hors');e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1600);
+    st.textContent='✓ Marqué « hors cible » (tag + Perdu).';
+  }catch(err){st.textContent='Erreur : '+err;}}
 
 refresh();
 document.getElementById('ghlCard').style.display='';
