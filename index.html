@@ -38,7 +38,7 @@
   ul.q li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:14px}
   ul.q li input{width:auto;margin-top:3px}
   .gen{background:var(--ink);color:#eaf2ef;border-radius:10px;padding:13px 14px;font-size:14.5px;margin-top:8px;white-space:pre-wrap}
-  .btn{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-weight:600;font-size:13.5px;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:.15s}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-weight:600;font-size:13.5px;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:.15s;text-decoration:none}
   .btn:hover{border-color:var(--ink)}
   .btn.p{background:var(--accent);color:#fff;border-color:var(--accent)}
   .btn.p:hover{background:var(--accent2)}
@@ -59,6 +59,8 @@
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
   .qitem{padding:7px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:5px;cursor:pointer;font-size:13px}
   .qitem:hover{border-color:var(--accent)}
+  .callbar{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .callbar a{flex:1;justify-content:center}
 </style>
 </head>
 <body>
@@ -80,6 +82,8 @@
     <div class="card">
       <h2>Fiche prospect</h2>
       <label>Société</label><input id="f_soc" placeholder="Nom de l'entreprise" />
+      <label>Téléphone</label><input id="f_phone" placeholder="+32 …" />
+      <div class="callbar"><a id="phoneLink" class="btn p sm" href="#" style="display:none">📞 Appeler</a></div>
       <div class="row">
         <div><label>Ville</label><input id="f_ville" placeholder="Ville" /></div>
         <div><label>Prénom contact</label><input id="f_prenom" placeholder="Si connu" /></div>
@@ -187,10 +191,9 @@ function refresh(){
   else hint.textContent='';
   const app=num('app'),pct=num('pct'),panier=num('panier');
   const missWeek=app*pct/100;
-  const missMonth=missWeek*4.3;
-  const recov=Math.max(1,Math.round(missMonth*0.15));
+  const recov=Math.max(1,Math.round(missWeek*4.3*0.15));
   const lost=Math.round(recov*panier);
-  let txt='« Donc si je résume : vous êtes souvent seul, les mains dans la voiture, et quand ça sonne à ce moment-là l\'appel part en absence. Vous m\'avez dit en rater à peu près '+Math.round(missWeek)+' par semaine. À '+panier+' € la prestation, même en n\'en récupérant que '+recov+' par mois, c\'est ~'+lost.toLocaleString('fr-FR')+' € qui filent chez le confrère qui a décroché. Plus les RDV oubliés et les avis Google que vous n\'avez pas le temps de demander. C\'est bien ça ? »';
+  const txt='« Donc si je résume : vous êtes souvent seul, les mains dans la voiture, et quand ça sonne à ce moment-là l\'appel part en absence. Vous m\'avez dit en rater à peu près '+Math.round(missWeek)+' par semaine. À '+panier+' € la prestation, même en n\'en récupérant que '+recov+' par mois, c\'est ~'+lost.toLocaleString('fr-FR')+' € qui filent chez le confrère qui a décroché. Plus les RDV oubliés et les avis Google que vous n\'avez pas le temps de demander. C\'est bien ça ? »';
   document.getElementById('painOut').textContent=txt;
   document.getElementById('painOut2').textContent=txt;
   buildNote();
@@ -224,10 +227,11 @@ function buildNote(){
   const body=curOC!==null?OC[curOC][2]:'';
   document.getElementById('note').value=head+body;
 }
-function resetCall(){curOC=null;document.querySelectorAll('.oc').forEach(e=>e.classList.remove('active'));document.getElementById('recoStage').textContent='';['soc','ville','prenom','note','avis'].forEach(k=>document.getElementById(f[k]).value='');document.getElementById('angleHint').textContent='';GHL.contactId=null;GHL.oppId=null;refresh();}
+function resetCall(){curOC=null;document.querySelectorAll('.oc').forEach(e=>e.classList.remove('active'));document.getElementById('recoStage').textContent='';['soc','ville','prenom','note','avis'].forEach(k=>document.getElementById(f[k]).value='');document.getElementById('f_phone').value='';document.getElementById('phoneLink').style.display='none';document.getElementById('angleHint').textContent='';GHL.contactId=null;GHL.oppId=null;refresh();}
 
-// ===== Mode connecté GHL (phase 2) =====
+// ===== Mode connecté GHL =====
 const GHL={contactId:null,oppId:null,stages:{}};
+const CF={note:'wfxLGEpLdu8Rb1GnARtg',avis:'EgDlNlTp1ZeTgSqqhX4g'};
 const OUTCOME_STAGE={0:'pas de réponse',1:'pas de réponse',2:'conversation',3:'perdu',4:'démo planifiée',5:'gagné'};
 function findStage(part){const e=Object.entries(GHL.stages).find(([n])=>n.toLowerCase().includes(part));return e?e[1]:null;}
 async function gGet(qs){const r=await fetch('/api/ghl?'+qs);return r.json();}
@@ -250,12 +254,33 @@ async function loadQueue(){
     st.textContent=opps.length+' prospect(s) à appeler.';
   }catch(e){st.textContent='Erreur : '+e;}
 }
-function pickProspect(o){const c=o.contact||{};
+async function pickProspect(o){const c=o.contact||{};const st=document.getElementById('ghlStatus');
   document.getElementById('f_soc').value=o.name||c.name||'';
   document.getElementById('f_prenom').value=c.firstName||'';
-  if(c.city)document.getElementById('f_ville').value=c.city;
   GHL.contactId=o.contactId||(c&&c.id)||null;GHL.oppId=o.id||null;
-  refresh();document.getElementById('ghlStatus').textContent='Fiche chargée : '+(o.name||c.name||'');}
+  document.getElementById('f_phone').value=c.phone||'';
+  st.textContent='Chargement de la fiche…';
+  try{
+    if(GHL.contactId){
+      const j=await gGet('action=contact&id='+GHL.contactId);
+      const ct=(j&&j.contact)||{};
+      const phone=ct.phone||c.phone||'';
+      document.getElementById('f_phone').value=phone;
+      if(ct.city)document.getElementById('f_ville').value=ct.city;
+      if(ct.firstName)document.getElementById('f_prenom').value=ct.firstName;
+      (ct.customFields||[]).forEach(cf=>{
+        if(cf.id===CF.note)document.getElementById('f_note').value=cf.value;
+        if(cf.id===CF.avis)document.getElementById('f_avis').value=cf.value;
+      });
+    }
+  }catch(e){}
+  const phone=document.getElementById('f_phone').value;
+  const link=document.getElementById('phoneLink');
+  if(phone){link.href='tel:'+phone;link.textContent='📞 Appeler '+phone;link.style.display='';}
+  else{link.style.display='none';}
+  refresh();
+  st.textContent='Fiche chargée : '+(o.name||c.name||'');
+}
 async function writeBack(){const st=document.getElementById('ghlStatus');
   if(!GHL.contactId&&!GHL.oppId){st.textContent='Aucune fiche GHL chargée.';return;}
   try{const note=document.getElementById('note').value;
