@@ -37,7 +37,6 @@
   ul.q{list-style:none;margin:6px 0}
   ul.q li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:14px}
   ul.q li input{width:auto;margin-top:3px}
-  .pill{display:inline-block;background:rgba(14,115,97,.1);color:var(--accent2);font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;margin:2px 4px 2px 0}
   .gen{background:var(--ink);color:#eaf2ef;border-radius:10px;padding:13px 14px;font-size:14.5px;margin-top:8px;white-space:pre-wrap}
   .btn{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-weight:600;font-size:13.5px;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:.15s}
   .btn:hover{border-color:var(--ink)}
@@ -58,7 +57,8 @@
   .copied{color:var(--ok);font-size:12.5px;font-weight:600;margin-left:8px;opacity:0;transition:.2s}
   .copied.show{opacity:1}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
-  .calc label{margin-top:6px}
+  .qitem{padding:7px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:5px;cursor:pointer;font-size:13px}
+  .qitem:hover{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -69,9 +69,14 @@
 </div>
 
 <div class="wrap">
-
-  <!-- LEFT : fiche + calcul -->
   <div>
+    <div class="card" id="ghlCard" style="display:none">
+      <h2>File d'appels (GHL)</h2>
+      <button class="btn p sm" onclick="loadQueue()">Charger la file « À contacter »</button>
+      <p class="hint" id="ghlStatus"></p>
+      <div id="queue" style="max-height:220px;overflow:auto;margin-top:8px"></div>
+    </div>
+
     <div class="card">
       <h2>Fiche prospect</h2>
       <label>Société</label><input id="f_soc" placeholder="Nom de l'entreprise" />
@@ -86,18 +91,17 @@
       <p class="hint" id="angleHint"></p>
     </div>
 
-    <div class="card calc">
+    <div class="card">
       <h2>Calculateur de douleur</h2>
       <label>Appels reçus / semaine (estimé avec lui)</label><input id="c_app" type="number" value="15" />
       <label>% d'appels manqués quand il bosse</label><input id="c_pct" type="number" value="30" />
       <label>Panier moyen d'une prestation (€)</label><input id="c_panier" type="number" value="250" />
       <div id="painOut" class="gen" style="margin-top:12px"></div>
-      <button class="btn p sm" style="margin-top:10px" onclick="copyText('painOut',this)">Copier la reformulation</button>
+      <button class="btn p sm" style="margin-top:10px" onclick="copyText('painOut')">Copier la reformulation</button>
       <span class="copied" id="cp_pain">Copié ✓</span>
     </div>
   </div>
 
-  <!-- RIGHT : script + objections + issue -->
   <div>
     <div class="card">
       <h2>Le script (clique pour dérouler)</h2>
@@ -154,11 +158,13 @@
       <h2>Issue de l'appel</h2>
       <div class="outcomes" id="ocs"></div>
       <p class="reco" id="recoStage"></p>
-      <label>Note d'appel (à coller dans GHL)</label>
+      <label>Note d'appel (à coller / enregistrer dans GHL)</label>
       <textarea id="note" style="min-height:90px"></textarea>
       <div style="margin-top:10px">
-        <button class="btn p sm" onclick="copyText('note',this)">Copier la note</button>
+        <button class="btn p sm" onclick="copyText('note')">Copier la note</button>
+        <button class="btn sm" id="ghlSaveBtn" style="display:none;margin-left:6px;border-color:var(--accent);color:var(--accent2)" onclick="writeBack()">Enregistrer dans GHL ↗</button>
         <span class="copied" id="cp_note">Copié ✓</span>
+        <span class="copied" id="cp_ghl">Enregistré dans GHL ✓</span>
         <button class="btn sm" style="margin-left:6px" onclick="resetCall()">Nouvel appel</button>
       </div>
     </div>
@@ -167,7 +173,7 @@
 
 <script>
 function tog(h){h.parentElement.classList.toggle('open')}
-function copyText(id,btn){const t=document.getElementById(id).innerText||document.getElementById(id).value;navigator.clipboard.writeText(t.trim());const tip=id==='note'?'cp_note':'cp_pain';const e=document.getElementById(tip);if(e){e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1400)}}
+function copyText(id){const el=document.getElementById(id);const t=el.innerText||el.value||'';navigator.clipboard.writeText(t.trim());const tip=id==='note'?'cp_note':'cp_pain';const e=document.getElementById(tip);if(e){e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1400)}}
 
 const f={soc:'f_soc',ville:'f_ville',prenom:'f_prenom',note:'f_note',avis:'f_avis',app:'c_app',pct:'c_pct',panier:'c_panier'};
 function val(k){return document.getElementById(f[k]).value}
@@ -176,25 +182,21 @@ function num(k){return parseFloat(val(k))||0}
 function refresh(){
   const prenom=val('prenom').trim()||'[Prénom]';
   document.getElementById('s_prenom1').textContent=prenom;
-  // angle hint
   const avis=num('avis');const hint=document.getElementById('angleHint');
-  if(val('avis')!==''){hint.textContent = avis<15 ? '🎯 Peu d\'avis → excellent angle : « les avis Google vous ramèneraient des clients ».' : 'Déjà bien noté → angle : « ne perdez plus les appels qui font tourner cette réputation ».';}
+  if(val('avis')!==''){hint.textContent=avis<15?'🎯 Peu d\'avis → excellent angle : « les avis Google vous ramèneraient des clients ».':'Déjà bien noté → angle : « ne perdez plus les appels qui font tourner cette réputation ».';}
   else hint.textContent='';
-  // pain calc
   const app=num('app'),pct=num('pct'),panier=num('panier');
   const missWeek=app*pct/100;
   const missMonth=missWeek*4.3;
   const recov=Math.max(1,Math.round(missMonth*0.15));
   const lost=Math.round(recov*panier);
-  const soc=val('soc').trim();
-  let txt=`« Donc si je résume : vous êtes souvent seul, les mains dans la voiture, et quand ça sonne à ce moment-là l'appel part en absence. Vous m'avez dit en rater à peu près ${Math.round(missWeek)} par semaine. À ${panier} € la prestation, même en n'en récupérant que ${recov} par mois, c'est ~${lost.toLocaleString('fr-FR')} € qui filent chez le confrère qui a décroché. Plus les RDV oubliés et les avis Google que vous n'avez pas le temps de demander. C'est bien ça ? »`;
+  let txt='« Donc si je résume : vous êtes souvent seul, les mains dans la voiture, et quand ça sonne à ce moment-là l\'appel part en absence. Vous m\'avez dit en rater à peu près '+Math.round(missWeek)+' par semaine. À '+panier+' € la prestation, même en n\'en récupérant que '+recov+' par mois, c\'est ~'+lost.toLocaleString('fr-FR')+' € qui filent chez le confrère qui a décroché. Plus les RDV oubliés et les avis Google que vous n\'avez pas le temps de demander. C\'est bien ça ? »';
   document.getElementById('painOut').textContent=txt;
   document.getElementById('painOut2').textContent=txt;
   buildNote();
 }
 Object.values(f).forEach(id=>document.getElementById(id).addEventListener('input',refresh));
 
-// objections
 const OBJ=[
  ['« J\'ai pas le temps »','Justement — c\'est le temps que vous passez à rappeler les gens, ou que vous perdez parce qu\'ils sont déjà partis ailleurs, que ça vous fait récupérer. 10 min de démo, pas plus. Demain matin ou jeudi ?'],
  ['« C\'est cher / ça coûte combien ? »','Je vous donne le détail en démo, mais pour situer : si l\'outil vous récupère un seul detailing par mois, il est déjà rentabilisé plusieurs fois. Et c\'est sans engagement. On se cale 10 min ?'],
@@ -203,11 +205,10 @@ const OBJ=[
  ['« Envoyez-moi un mail »','Avec plaisir, je vous l\'envoie. Mais ça parle 100x mieux en démo : laissez-moi 10 min, et je vous envoie tout par écrit juste après. Demain matin ?'],
  ['« Faut que j\'en parle à mon associé »','Très bien — autant que vous voyiez la démo tous les deux en même temps. On trouve un créneau où vous êtes ensemble ?'],
 ];
-document.getElementById('objs').innerHTML=OBJ.map(o=>`<div class="obj"><div class="oh" onclick="this.parentElement.classList.toggle('open')">${o[0]}<span class="chev">▼</span></div><div class="ob"><div class="say">${o[1]}</div></div></div>`).join('');
+document.getElementById('objs').innerHTML=OBJ.map(o=>'<div class="obj"><div class="oh" onclick="this.parentElement.classList.toggle(\'open\')">'+o[0]+'<span class="chev">▼</span></div><div class="ob"><div class="say">'+o[1]+'</div></div></div>').join('');
 
-// outcomes
 const OC=[
- ['Pas de réponse','Tenté – pas de réponse','Pas de réponse. Déplacé en « Tenté – pas de réponse » (séquence relance déclenchée).'],
+ ['Pas de réponse','Tenté – pas de réponse','Pas de réponse.'],
  ['Messagerie','Tenté – pas de réponse','Messagerie. Message laissé + SMS de relance.'],
  ['Rappel programmé','Conversation en cours','Demande à être rappelé. À recontacter : '],
  ['Pas intéressé','Perdu','Pas intéressé aujourd\'hui. Motif : '],
@@ -215,16 +216,58 @@ const OC=[
  ['Gagné 🎉','Gagné','Client signé ! Onboarding à lancer.'],
 ];
 let curOC=null;
-document.getElementById('ocs').innerHTML=OC.map((o,i)=>`<div class="oc" data-i="${i}" onclick="pickOC(${i})">${o[0]}</div>`).join('');
+document.getElementById('ocs').innerHTML=OC.map((o,i)=>'<div class="oc" data-i="'+i+'" onclick="pickOC('+i+')">'+o[0]+'</div>').join('');
 function pickOC(i){curOC=i;document.querySelectorAll('.oc').forEach(e=>e.classList.toggle('active',+e.dataset.i===i));document.getElementById('recoStage').innerHTML='Étape GHL recommandée : <b>'+OC[i][1]+'</b>';buildNote();}
 function buildNote(){
   const soc=val('soc').trim();const d=new Date().toLocaleDateString('fr-FR');
-  let head=(soc?soc+' — ':'')+d+String.fromCharCode(10);
-  let body=curOC!==null?OC[curOC][2]:'';
+  const head=(soc?soc+' — ':'')+d+String.fromCharCode(10);
+  const body=curOC!==null?OC[curOC][2]:'';
   document.getElementById('note').value=head+body;
 }
-function resetCall(){curOC=null;document.querySelectorAll('.oc').forEach(e=>e.classList.remove('active'));document.getElementById('recoStage').textContent='';['soc','ville','prenom','note','avis'].forEach(k=>document.getElementById(f[k]).value='');document.getElementById('angleHint').textContent='';refresh();}
+function resetCall(){curOC=null;document.querySelectorAll('.oc').forEach(e=>e.classList.remove('active'));document.getElementById('recoStage').textContent='';['soc','ville','prenom','note','avis'].forEach(k=>document.getElementById(f[k]).value='');document.getElementById('angleHint').textContent='';GHL.contactId=null;GHL.oppId=null;refresh();}
+
+// ===== Mode connecté GHL (phase 2) =====
+const GHL={contactId:null,oppId:null,stages:{}};
+const OUTCOME_STAGE={0:'pas de réponse',1:'pas de réponse',2:'conversation',3:'perdu',4:'démo planifiée',5:'gagné'};
+function findStage(part){const e=Object.entries(GHL.stages).find(([n])=>n.toLowerCase().includes(part));return e?e[1]:null;}
+async function gGet(qs){const r=await fetch('/api/ghl?'+qs);return r.json();}
+async function gPost(b){const r=await fetch('/api/ghl',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json();}
+async function loadQueue(){
+  const st=document.getElementById('ghlStatus');st.textContent='Chargement…';
+  try{
+    const pls=await gGet('action=pipelines');
+    if(pls.error){st.textContent='⚠ '+pls.error;return;}
+    const list=pls.pipelines||(Array.isArray(pls)?pls:[]);
+    const p=list.find(x=>/prospection detailing/i.test(x.name||''));
+    if(!p){st.textContent='Pipeline « Prospection detailing » introuvable.';return;}
+    GHL.stages={};(p.stages||[]).forEach(s=>GHL.stages[s.name]=s.id);
+    const sid=findStage('à contacter');
+    const q=await gGet('action=queue&pipelineId='+p.id+(sid?'&stageId='+sid:''));
+    const opps=q.opportunities||[];
+    const box=document.getElementById('queue');box.innerHTML='';
+    opps.forEach(o=>{const c=o.contact||{};const d=document.createElement('div');d.className='qitem';
+      d.textContent=o.name||c.name||'(sans nom)';d.onclick=function(){pickProspect(o);};box.appendChild(d);});
+    st.textContent=opps.length+' prospect(s) à appeler.';
+  }catch(e){st.textContent='Erreur : '+e;}
+}
+function pickProspect(o){const c=o.contact||{};
+  document.getElementById('f_soc').value=o.name||c.name||'';
+  document.getElementById('f_prenom').value=c.firstName||'';
+  if(c.city)document.getElementById('f_ville').value=c.city;
+  GHL.contactId=o.contactId||(c&&c.id)||null;GHL.oppId=o.id||null;
+  refresh();document.getElementById('ghlStatus').textContent='Fiche chargée : '+(o.name||c.name||'');}
+async function writeBack(){const st=document.getElementById('ghlStatus');
+  if(!GHL.contactId&&!GHL.oppId){st.textContent='Aucune fiche GHL chargée.';return;}
+  try{const note=document.getElementById('note').value;
+    if(GHL.contactId&&note)await gPost({action:'note',contactId:GHL.contactId,body:note});
+    if(GHL.oppId&&curOC!==null){const sid=findStage(OUTCOME_STAGE[curOC]||'§');if(sid)await gPost({action:'stage',opportunityId:GHL.oppId,stageId:sid});}
+    const e=document.getElementById('cp_ghl');e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1600);
+    st.textContent='✓ Note + étape écrites dans GHL.';
+  }catch(err){st.textContent='Erreur écriture : '+err;}}
+
 refresh();
+document.getElementById('ghlCard').style.display='';
+document.getElementById('ghlSaveBtn').style.display='';
 </script>
 </body>
 </html>
