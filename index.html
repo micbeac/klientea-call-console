@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
-  :root{--ink:#0B1F33;--accent:#0E7361;--accent2:#0a5a4d;--bg:#F4F6F5;--panel:#fff;--line:#e3e6e4;--muted:#5b6b73;--text:#16242f;--warn:#b45309;--ok:#0E7361;}
+  :root{--ink:#0B1F33;--accent:#0E7361;--accent2:#0a5a4d;--bg:#F4F6F5;--panel:#fff;--line:#e3e6e4;--muted:#5b6b73;--text:#16242f;--warn:#b45309;--ok:#0E7361;--meta:#1877F2;}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;font-size:15px}
   .top{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
@@ -31,9 +31,10 @@
   .step>.h .chev{margin-left:auto;color:var(--muted);transition:.2s;font-size:13px}
   .step.open>.h .chev{transform:rotate(180deg)}
   .step>.b{padding:0 15px;max-height:0;overflow:hidden;transition:max-height .25s ease}
-  .step.open>.b{max-height:1600px;padding:4px 15px 16px}
+  .step.open>.b{max-height:1800px;padding:4px 15px 16px}
   .say{background:#eef6f3;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 12px;margin:8px 0;font-size:14px;color:#143}
   .say em{color:var(--muted)}
+  .sub{font-size:12.5px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 2px}
   ul.q{list-style:none;margin:6px 0}
   ul.q li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:14px}
   ul.q li input{width:auto;margin-top:3px}
@@ -48,12 +49,17 @@
   .obj>.oh .chev{margin-left:auto;color:var(--muted);font-size:12px;transition:.2s}
   .obj.open>.oh .chev{transform:rotate(180deg)}
   .obj>.ob{max-height:0;overflow:hidden;transition:max-height .2s}
-  .obj.open>.ob{max-height:400px;padding:0 13px 12px}
+  .obj.open>.ob{max-height:500px;padding:0 13px 12px}
   .outcomes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
   .oc{padding:9px 12px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink)}
   .oc.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .reco{font-size:13px;color:var(--muted);margin:6px 0}
-  .reco b{color:var(--accent2)}
+  .modebtns{display:flex;gap:8px}
+  .modebtn{flex:1;padding:11px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--ink);text-align:center;line-height:1.25}
+  .modebtn small{display:block;font-weight:500;font-size:11.5px;color:var(--muted);margin-top:2px}
+  .modebtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .modebtn.active small{color:#d7ece6}
+  .modebtn.meta.active{background:var(--meta);border-color:var(--meta)}
+  .modebtn.meta.active small{color:#dce9fd}
   .copied{color:var(--ok);font-size:12.5px;font-weight:600;margin-left:8px;opacity:0;transition:.2s}
   .copied.show{opacity:1}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
@@ -65,14 +71,23 @@
 <div class="top">
   <span class="logo"><span class="m"><span></span></span>Klientea</span>
   <span style="font-weight:600">Call Console</span>
-  <span class="tag">Script d'appel guidé · detailing</span>
+  <span class="tag" id="modeTag">File : Detailing</span>
 </div>
 
 <div class="wrap">
   <div>
+    <div class="card">
+      <h2>File d'appel</h2>
+      <div class="modebtns">
+        <button class="modebtn active" id="mode-detailing" onclick="setMode('detailing')">Detailing<small>Klientea</small></button>
+        <button class="modebtn meta" id="mode-meta" onclick="setMode('meta')">Pub Meta<small>AutoFlow</small></button>
+      </div>
+      <p class="hint">Choisis la file, puis charge-la depuis la carte ci-dessous. Le script s'adapte automatiquement.</p>
+    </div>
+
     <div class="card" id="ghlCard" style="display:none">
       <h2>File d'appels (GHL)</h2>
-      <button class="btn p sm" onclick="loadQueue()">Charger la file « À contacter »</button>
+      <button class="btn p sm" onclick="loadQueue()">Charger la file</button>
       <p class="hint" id="ghlStatus"></p>
       <div id="queue" style="max-height:220px;overflow:auto;margin-top:8px"></div>
     </div>
@@ -103,7 +118,7 @@
       <p class="hint" id="angleHint"></p>
     </div>
 
-    <div class="card">
+    <div class="card" id="calcCard">
       <h2>Calculateur de douleur</h2>
       <label>Appels reçus / semaine (estimé avec lui)</label><input id="c_app" type="number" value="15" />
       <label>% d'appels manqués quand il bosse</label><input id="c_pct" type="number" value="30" />
@@ -118,45 +133,97 @@
     <div class="card">
       <h2>Le script (clique pour dérouler)</h2>
 
-      <div class="step open"><div class="h" onclick="tog(this)"><span class="n">1</span>Accroche · gagner 20 secondes<span class="chev">▼</span></div>
-        <div class="b">
-          <div class="say">« Bonjour <b id="s_prenom1">[Prénom]</b>, [Toi] de Klientea. Je vais être direct pour ne pas vous faire perdre de temps — vous avez 30 secondes ? … Je travaille avec des pros du detailing, et j'appelle pour une raison simple : <b>quand vous êtes les mains dans la voiture, qui répond au téléphone ?</b> »</div>
-          <div class="say"><em>Variante curiosité :</em> « Sur une semaine, vous diriez que vous ratez combien d'appels parce que vous êtes en prestation ? … C'est exactement le sujet de mon appel. »</div>
+      <!-- ===== SCRIPT DETAILING (Klientea) ===== -->
+      <div id="script-detailing">
+        <div class="step open"><div class="h" onclick="tog(this)"><span class="n">1</span>Accroche · gagner 20 secondes<span class="chev">▼</span></div>
+          <div class="b">
+            <div class="say">« Bonjour <b id="s_prenom1">[Prénom]</b>, [Toi] de Klientea. Je vais être direct pour ne pas vous faire perdre de temps — vous avez 30 secondes ? … Je travaille avec des pros du detailing, et j'appelle pour une raison simple : <b>quand vous êtes les mains dans la voiture, qui répond au téléphone ?</b> »</div>
+            <div class="say"><em>Variante curiosité :</em> « Sur une semaine, vous diriez que vous ratez combien d'appels parce que vous êtes en prestation ? … C'est exactement le sujet de mon appel. »</div>
+          </div>
+        </div>
+        <div class="step"><div class="h" onclick="tog(this)"><span class="n">2</span>Questions qualifiantes<span class="chev">▼</span></div>
+          <div class="b">
+            <ul class="q">
+              <li><input type="checkbox"><span>Quand ça sonne et que vous êtes en cabine/au polish, il se passe quoi ?</span></li>
+              <li><input type="checkbox"><span>Vous prenez vos RDV comment — téléphone, message, les deux ?</span></li>
+              <li><input type="checkbox"><span>Les appels qui sonnent dans le vide, vous les rappelez tous ?</span></li>
+              <li><input type="checkbox"><span>Les gens qui ne laissent pas de message, vous les recontactez ?</span></li>
+              <li><input type="checkbox"><span>Les RDV oubliés / clients qui ne viennent pas, ça arrive souvent ?</span></li>
+              <li><input type="checkbox"><span>Les avis Google, vous en demandez systématiquement ?</span></li>
+              <li><input type="checkbox"><span>Un detailing complet, c'est quel prix moyen chez vous ?</span></li>
+            </ul>
+            <p class="hint">→ Note ses chiffres dans le calculateur à gauche, ils servent à l'étape 3.</p>
+          </div>
+        </div>
+        <div class="step"><div class="h" onclick="tog(this)"><span class="n">3</span>Reformulation de la douleur<span class="chev">▼</span></div>
+          <div class="b">
+            <p class="hint">Renvoie-lui SA réalité avec SES chiffres, puis tais-toi et laisse-le dire « oui, exactement ».</p>
+            <div id="painOut2" class="gen"></div>
+          </div>
+        </div>
+        <div class="step"><div class="h" onclick="tog(this)"><span class="n">4</span>Pont vers la solution (1 phrase)<span class="chev">▼</span></div>
+          <div class="b">
+            <div class="say">« C'est précisément ce qu'on fait chez Klientea : <b>on vous aide à ne plus perdre les appels entrants, à confirmer automatiquement les rendez-vous, et à récupérer plus d'avis Google après chaque prestation</b> — sans embaucher personne. »</div>
+          </div>
+        </div>
+        <div class="step"><div class="h" onclick="tog(this)"><span class="n">5</span>Proposer la démo (objectif unique)<span class="chev">▼</span></div>
+          <div class="b">
+            <div class="say">« Le mieux, c'est que je vous le montre : 10 minutes, je vous fais une démo où l'IA prend un vrai rendez-vous, vous le voyez tomber dans l'agenda en direct. <b>Vous préférez demain en matinée, ou jeudi en fin de journée ?</b> »</div>
+            <p class="hint">Verrouille le créneau → confirme le numéro → annonce un SMS/mail de confirmation immédiat.</p>
+          </div>
         </div>
       </div>
 
-      <div class="step"><div class="h" onclick="tog(this)"><span class="n">2</span>Questions qualifiantes<span class="chev">▼</span></div>
-        <div class="b">
-          <ul class="q">
-            <li><input type="checkbox"><span>Quand ça sonne et que vous êtes en cabine/au polish, il se passe quoi ?</span></li>
-            <li><input type="checkbox"><span>Vous prenez vos RDV comment — téléphone, message, les deux ?</span></li>
-            <li><input type="checkbox"><span>Les appels qui sonnent dans le vide, vous les rappelez tous ?</span></li>
-            <li><input type="checkbox"><span>Les gens qui ne laissent pas de message, vous les recontactez ?</span></li>
-            <li><input type="checkbox"><span>Les RDV oubliés / clients qui ne viennent pas, ça arrive souvent ?</span></li>
-            <li><input type="checkbox"><span>Les avis Google, vous en demandez systématiquement ?</span></li>
-            <li><input type="checkbox"><span>Un detailing complet, c'est quel prix moyen chez vous ?</span></li>
-          </ul>
-          <p class="hint">→ Note ses chiffres dans le calculateur à gauche, ils servent à l'étape 3.</p>
+      <!-- ===== SCRIPT PUB META (AutoFlow) ===== -->
+      <div id="script-meta" style="display:none">
+        <div class="step open"><div class="h" onclick="tog(this)"><span class="n">1</span>Opener · matche la pub<span class="chev">▼</span></div>
+          <div class="b">
+            <div class="say">« Bonjour, Mickaël Beauclair d'AutoFlow. Je vous rappelle suite à la <b>vidéo sur les agents vocaux</b> que vous avez regardée la semaine passée — vous aviez demandé à voir comment l'installer chez vous. <b>Ça vous revient ?</b> »</div>
+            <p class="hint">Souriant, débit posé, tu poses le cadre. Zéro auto-sabotage (« je vous dérange »). Bénéfice &gt; techno : dis « ne plus rater un client qui appelle », pas « agent vocal ».</p>
+          </div>
         </div>
-      </div>
-
-      <div class="step"><div class="h" onclick="tog(this)"><span class="n">3</span>Reformulation de la douleur<span class="chev">▼</span></div>
-        <div class="b">
-          <p class="hint">Renvoie-lui SA réalité avec SES chiffres, puis tais-toi et laisse-le dire « oui, exactement ».</p>
-          <div id="painOut2" class="gen"></div>
+        <div class="step"><div class="h" onclick="tog(this)"><span class="n">2</span>Premières réactions (15 s)<span class="chev">▼</span></div>
+          <div class="b">
+            <p class="hint">Un « pas intéressé » dans les 15 premières secondes ne compte pas : il réagit à « un commercial », pas à ton offre. Pose UNE question avant de le laisser juger.</p>
+            <div class="sub">« C'est mon collègue / c'est pas moi »</div>
+            <div class="say">« Ah pas de souci ! Vous bossez avec lui au quotidien j'imagine ? Juste pour préparer le rappel : vous êtes dans quel secteur, et c'est vous qui gérez les appels clients quand il est absent ? Il s'appelle comment et il revient quand ? »</div>
+            <div class="sub">« Mauvaise manip / ça m'intéresse pas »</div>
+            <div class="say">« Ça arrive ! Juste avant de vous laisser — vous devez recevoir pas mal d'appels pendant que vous êtes les mains dans le cambouis, non ? La plupart des garages que j'appelle ratent 3-4 appels clients par jour sans s'en rendre compte. <b>C'est votre cas, ou vous arrivez à tout décrocher ?</b> »</div>
+          </div>
         </div>
-      </div>
-
-      <div class="step"><div class="h" onclick="tog(this)"><span class="n">4</span>Pont vers la solution (1 phrase)<span class="chev">▼</span></div>
-        <div class="b">
-          <div class="say">« C'est précisément ce qu'on fait chez Klientea : <b>on vous aide à ne plus perdre les appels entrants, à confirmer automatiquement les rendez-vous, et à récupérer plus d'avis Google après chaque prestation</b> — sans embaucher personne. »</div>
+        <div class="step"><div class="h" onclick="tog(this)"><span class="n">3</span>Pont + discovery (3 questions)<span class="chev">▼</span></div>
+          <div class="b">
+            <div class="say">« Parfait. Avant de vous montrer l'installation, juste pour l'adapter à votre cas : l'agent vocal, l'idée c'est de ne plus rater les clients qui vous appellent. Mais du coup, ces clients — <b>ils viennent d'où aujourd'hui ?</b> »</div>
+            <ul class="q">
+              <li><input type="checkbox"><span><b>Source</b> — « Vos nouveaux clients, ils viennent surtout d'où : bouche-à-oreille, Google, la pub, les réseaux ? »</span></li>
+              <li><input type="checkbox"><span><b>Volume / douleur</b> — « Vous rentrez combien de nouveaux clients par mois ? Et vous aimeriez que ce soit plus ? »</span></li>
+              <li><input type="checkbox"><span><b>Réputation</b> — « Vous êtes à combien d'avis sur votre fiche Google ? »</span></li>
+            </ul>
+            <p class="hint">→ Peu de Google = avis + fiche · Peu de volume = Meta Ads · Rate des appels = agent vocal. Vends le levier faible.</p>
+          </div>
         </div>
-      </div>
-
-      <div class="step"><div class="h" onclick="tog(this)"><span class="n">5</span>Proposer la démo (objectif unique)<span class="chev">▼</span></div>
-        <div class="b">
-          <div class="say">« Le mieux, c'est que je vous le montre : 10 minutes, je vous fais une démo où l'IA prend un vrai rendez-vous, vous le voyez tomber dans l'agenda en direct. <b>Vous préférez demain en matinée, ou jeudi en fin de journée ?</b> »</div>
-          <p class="hint">Verrouille le créneau → confirme le numéro → annonce un SMS/mail de confirmation immédiat.</p>
+        <div class="step"><div class="h" onclick="tog(this)"><span class="n">4</span>Pitch (orienté CA)<span class="chev">▼</span></div>
+          <div class="b">
+            <div class="say">« Voilà ce que je fais concrètement : un agent vocal ne sert à rien si personne ne vous appelle. Donc je travaille les deux bouts. D'un côté <b>je vous ramène des clients</b> — pub Meta ciblée dans votre zone, et je booste votre fiche Google pour que vous remontiez et que vous inspiriez confiance. De l'autre, <b>l'agent vocal s'assure qu'aucun de ces clients ne passe à la trappe</b> quand vous êtes occupé. Résultat : plus d'appels entrants, et zéro perdu. »</div>
+            <p class="hint">Appuie sur SON levier faible, ne déballe pas tout. Puis STOP — cherche une réaction.</p>
+            <div class="say"><em>Transition (micro-oui) :</em> « Ça, ramener plus de clients de façon régulière — c'est un sujet pour vous en ce moment ? »</div>
+            <p class="hint">Pas de micro-oui = pas de RDV qui tienne. Attends sa réponse avant de proposer le créneau.</p>
+          </div>
+        </div>
+        <div class="step"><div class="h" onclick="tog(this)"><span class="n">5</span>Closing en 2 temps<span class="chev">▼</span></div>
+          <div class="b">
+            <div class="sub">1 · La promesse (vends le RDV, pas « une présentation »)</div>
+            <div class="say">« Voilà ce que je vous propose : d'ici notre rendez-vous, je regarde votre fiche Google, vos avis et vos 2-3 concurrents directs dans votre zone. En 15 minutes je vous montre <b>exactement où vous perdez des clients aujourd'hui</b> et les 2-3 choses à corriger en priorité. Et je vous fais écouter l'agent vocal en live. <b>Que vous bossiez avec moi ou pas, vous repartez avec le plan.</b> »</div>
+            <p class="hint">Les 3 ingrédients : gratuit &amp; sans engagement · personnalisé (SA fiche, SA ville, SES concurrents) · court (15 min).</p>
+            <div class="sub">2 · Le créneau (verrouille, jamais « quand ça vous arrange »)</div>
+            <div class="say">« On dit <b>lundi 10h ou mardi en fin de journée</b> ? Je vous appelle sur ce numéro et je vous envoie la confirmation juste après. »</div>
+            <ul class="q">
+              <li><input type="checkbox"><span>Date + heure précises</span></li>
+              <li><input type="checkbox"><span>Bon interlocuteur (nom du décideur si ce n'est pas lui)</span></li>
+              <li><input type="checkbox"><span>Email pour la confirmation</span></li>
+              <li><input type="checkbox"><span>Récapitule à voix haute : « Donc [jour] [heure], je vous rappelle, top ! »</span></li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -169,7 +236,7 @@
     <div class="card">
       <h2>Issue de l'appel</h2>
       <div class="outcomes" id="ocs"></div>
-      <p class="reco" id="recoStage"></p>
+      <p class="reco" id="recoStage" style="font-size:13px;color:var(--muted)"></p>
       <label>Note d'appel (à coller / enregistrer dans GHL)</label>
       <textarea id="note" style="min-height:90px"></textarea>
       <div style="margin-top:10px">
@@ -184,6 +251,7 @@
 </div>
 
 <script>
+let MODE='detailing';
 function tog(h){h.parentElement.classList.toggle('open')}
 function copyText(id){const el=document.getElementById(id);const t=el.innerText||el.value||'';navigator.clipboard.writeText(t.trim());const tip=id==='note'?'cp_note':'cp_pain';const e=document.getElementById(tip);if(e){e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1400)}}
 
@@ -193,9 +261,9 @@ function num(k){return parseFloat(val(k))||0}
 
 function refresh(){
   const prenom=val('prenom').trim()||'[Prénom]';
-  document.getElementById('s_prenom1').textContent=prenom;
+  const p1=document.getElementById('s_prenom1');if(p1)p1.textContent=prenom;
   const avis=num('avis');const hint=document.getElementById('angleHint');
-  if(val('avis')!==''){hint.textContent=avis<15?'🎯 Peu d\'avis → excellent angle : « les avis Google vous ramèneraient des clients ».':'Déjà bien noté → angle : « ne perdez plus les appels qui font tourner cette réputation ».';}
+  if(MODE==='detailing'&&val('avis')!==''){hint.textContent=avis<15?'🎯 Peu d\'avis → excellent angle : « les avis Google vous ramèneraient des clients ».':'Déjà bien noté → angle : « ne perdez plus les appels qui font tourner cette réputation ».';}
   else hint.textContent='';
   const app=num('app'),pct=num('pct'),panier=num('panier');
   const missWeek=app*pct/100;
@@ -203,7 +271,7 @@ function refresh(){
   const lost=Math.round(recov*panier);
   const txt='« Donc si je résume : vous êtes souvent seul, les mains dans la voiture, et quand ça sonne à ce moment-là l\'appel part en absence. Vous m\'avez dit en rater à peu près '+Math.round(missWeek)+' par semaine. À '+panier+' € la prestation, même en n\'en récupérant que '+recov+' par mois, c\'est ~'+lost.toLocaleString('fr-FR')+' € qui filent chez le confrère qui a décroché. Plus les RDV oubliés et les avis Google que vous n\'avez pas le temps de demander. C\'est bien ça ? »';
   document.getElementById('painOut').textContent=txt;
-  document.getElementById('painOut2').textContent=txt;
+  const po2=document.getElementById('painOut2');if(po2)po2.textContent=txt;
   buildNote();
 }
 Object.values(f).forEach(id=>document.getElementById(id).addEventListener('input',refresh));
@@ -216,14 +284,24 @@ const OBJ=[
  ['« Envoyez-moi un mail »','Avec plaisir, je vous l\'envoie. Mais ça parle 100x mieux en démo : laissez-moi 10 min, et je vous envoie tout par écrit juste après. Demain matin ?'],
  ['« Faut que j\'en parle à mon associé »','Très bien — autant que vous voyiez la démo tous les deux en même temps. On trouve un créneau où vous êtes ensemble ?'],
 ];
-document.getElementById('objs').innerHTML=OBJ.map(o=>'<div class="obj"><div class="oh" onclick="this.parentElement.classList.toggle(\'open\')">'+o[0]+'<span class="chev">▼</span></div><div class="ob"><div class="say">'+o[1]+'</div></div></div>').join('');
+const OBJ_META=[
+ ['« J\'ai déjà quelqu\'un / une agence pour ça »','Top, c\'est que vous êtes déjà dans une logique de croissance. Ils vous ramènent combien de clients par mois concrètement ? … Justement, ce que je propose vient se brancher là-dessus sans doublon. Je vous montre en 15 min, vous comparez, et vous gardez le meilleur.'],
+ ['« Ça coûte combien ? »','Ça dépend de ce dont vous avez besoin, et c\'est exactement pour ça que je veux pas vous balancer un prix au hasard. En 15 min je regarde votre situation et je vous fais une proposition claire. Si le retour est là, ça se décide tout seul. On cale quand ?'],
+ ['« J\'ai pas le temps »','Je comprends, c\'est bien pour ça que je vous appelle vous, pas votre standard. 15 minutes, en visio ou téléphone, quand vous êtes au calme. Plutôt en début ou en fin de journée ?'],
+ ['« La pub ça marche pas / j\'ai déjà essayé »','Ouais, mal ciblée ça brûle du budget, je vous rejoins. La différence c\'est que je combine la pub avec les avis Google — parce qu\'un client qui voit votre pub va vérifier votre fiche avant d\'appeler. Si la fiche est vide, il part. C\'est souvent là que ça coince. Je vous montre ?'],
+ ['« Envoyez-moi un mail »','Avec plaisir, je vous envoie un récap. Mais pour que ce soit utile et pas un mail de plus qui dort, je vous appelle 15 min avant pour l\'adapter à votre garage. On dit [jour] à [heure] ?'],
+];
+function renderObjs(){
+  const arr=MODE==='meta'?OBJ_META:OBJ;
+  document.getElementById('objs').innerHTML=arr.map(o=>'<div class="obj"><div class="oh" onclick="this.parentElement.classList.toggle(\'open\')">'+o[0]+'<span class="chev">▼</span></div><div class="ob"><div class="say">'+o[1]+'</div></div></div>').join('');
+}
 
 const OC=[
  ['Pas de réponse','Tenté – pas de réponse','Pas de réponse.'],
  ['Messagerie','Tenté – pas de réponse','Messagerie. Message laissé + SMS de relance.'],
  ['Rappel programmé','Conversation en cours','Demande à être rappelé. À recontacter : '],
  ['Pas intéressé','Perdu','Pas intéressé aujourd\'hui. Motif : '],
- ['Démo calée ✅','Démo planifiée','DÉMO CALÉE le : '],
+ ['RDV calé ✅','Démo planifiée','RDV CALÉ le : '],
  ['Gagné 🎉','Gagné','Client signé ! Onboarding à lancer.'],
 ];
 let curOC=null;
@@ -231,11 +309,25 @@ document.getElementById('ocs').innerHTML=OC.map((o,i)=>'<div class="oc" data-i="
 function pickOC(i){curOC=i;document.querySelectorAll('.oc').forEach(e=>e.classList.toggle('active',+e.dataset.i===i));document.getElementById('recoStage').innerHTML='Étape GHL recommandée : <b>'+OC[i][1]+'</b>';buildNote();}
 function buildNote(){
   const soc=val('soc').trim();const d=new Date().toLocaleDateString('fr-FR');
-  const head=(soc?soc+' — ':'')+d+String.fromCharCode(10);
+  const src=MODE==='meta'?'[Pub Meta] ':'';
+  const head=src+(soc?soc+' — ':'')+d+String.fromCharCode(10);
   const body=curOC!==null?OC[curOC][2]:'';
   document.getElementById('note').value=head+body;
 }
 function resetCall(){curOC=null;document.querySelectorAll('.oc').forEach(e=>e.classList.remove('active'));document.getElementById('recoStage').textContent='';['soc','ville','prenom','note','avis'].forEach(k=>document.getElementById(f[k]).value='');document.getElementById('f_phone').value='';document.getElementById('f_site').value='';document.getElementById('f_cat').value='';document.getElementById('phoneLink').style.display='none';document.getElementById('siteLink').style.display='none';document.getElementById('horsBtn').style.display='none';document.getElementById('angleHint').textContent='';GHL.contactId=null;GHL.oppId=null;refresh();}
+
+function setMode(m){
+  MODE=m;
+  document.getElementById('mode-detailing').classList.toggle('active',m==='detailing');
+  document.getElementById('mode-meta').classList.toggle('active',m==='meta');
+  document.getElementById('script-detailing').style.display=m==='detailing'?'':'none';
+  document.getElementById('script-meta').style.display=m==='meta'?'':'none';
+  document.getElementById('calcCard').style.display=m==='detailing'?'':'none';
+  document.getElementById('modeTag').textContent=m==='meta'?'File : Pub Meta · AutoFlow':'File : Detailing';
+  document.getElementById('queue').innerHTML='';
+  document.getElementById('ghlStatus').textContent='';
+  renderObjs();refresh();
+}
 
 // ===== Mode connecté GHL =====
 const GHL={contactId:null,oppId:null,stages:{}};
@@ -244,7 +336,8 @@ const OUTCOME_STAGE={0:'pas de réponse',1:'pas de réponse',2:'conversation',3:
 let CATMAP={};
 fetch('/categories.json').then(r=>r.json()).then(d=>{CATMAP=d||{};}).catch(()=>{});
 function digits(s){return (s||'').replace(/\D/g,'');}
-function findStage(part){const e=Object.entries(GHL.stages).find(([n])=>n.toLowerCase().includes(part));return e?e[1]:null;}
+function stageFind(pred){const e=Object.entries(GHL.stages).find(([n])=>pred(n.toLowerCase()));return e?e[1]:null;}
+function findStage(part){return stageFind(n=>n.includes(part));}
 async function gGet(qs){const r=await fetch('/api/ghl?'+qs);return r.json();}
 async function gPost(b){const r=await fetch('/api/ghl',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json();}
 async function loadQueue(){
@@ -256,13 +349,16 @@ async function loadQueue(){
     const p=list.find(x=>/prospection detailing/i.test(x.name||''));
     if(!p){st.textContent='Pipeline « Prospection detailing » introuvable.';return;}
     GHL.stages={};(p.stages||[]).forEach(s=>GHL.stages[s.name]=s.id);
-    const sid=findStage('à contacter');
-    const q=await gGet('action=queue&pipelineId='+p.id+(sid?'&stageId='+sid:''));
+    let sid;
+    if(MODE==='meta'){sid=stageFind(n=>n.includes('meta'));}
+    else{sid=stageFind(n=>n.includes('à contacter')&&!n.includes('meta'))||stageFind(n=>n.includes('contacter')&&!n.includes('meta'));}
+    if(!sid){st.textContent='Étape introuvable pour cette file.';return;}
+    const q=await gGet('action=queue&pipelineId='+p.id+'&stageId='+sid);
     const opps=q.opportunities||[];
     const box=document.getElementById('queue');box.innerHTML='';
     opps.forEach(o=>{const c=o.contact||{};const d=document.createElement('div');d.className='qitem';
       d.textContent=o.name||c.name||'(sans nom)';d.onclick=function(){pickProspect(o);};box.appendChild(d);});
-    st.textContent=opps.length+' prospect(s) à appeler.';
+    st.textContent=opps.length+' prospect(s) dans cette file.';
   }catch(e){st.textContent='Erreur : '+e;}
 }
 function fillExtra(phone){
@@ -320,6 +416,7 @@ async function markOut(){const st=document.getElementById('ghlStatus');
     st.textContent='✓ Marqué « hors cible » (tag + Perdu).';
   }catch(err){st.textContent='Erreur : '+err;}}
 
+renderObjs();
 refresh();
 document.getElementById('ghlCard').style.display='';
 document.getElementById('ghlSaveBtn').style.display='';
