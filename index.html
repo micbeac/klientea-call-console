@@ -96,6 +96,7 @@
       <h2>Fiche prospect</h2>
       <label>Société</label><input id="f_soc" placeholder="Nom de l'entreprise" />
       <label>Téléphone</label><input id="f_phone" placeholder="+32 …" />
+      <div id="phoneText" style="margin-top:6px;font-size:18px;font-weight:700;letter-spacing:.4px;color:var(--ink);user-select:all"></div>
       <div style="margin-top:8px"><a id="phoneLink" class="btn p sm" href="#" style="display:none">📞 Appeler</a></div>
       <label>Site web</label>
       <div style="display:flex;gap:8px;align-items:center">
@@ -294,6 +295,15 @@ function refresh(){
 }
 Object.values(f).forEach(id=>document.getElementById(id).addEventListener('input',refresh));
 
+function syncPhone(){
+  const phone=document.getElementById('f_phone').value.trim();
+  const link=document.getElementById('phoneLink');
+  document.getElementById('phoneText').textContent=phone||'';
+  if(phone){link.href='tel:'+phone;link.textContent='📞 Appeler '+phone;link.style.display='';}
+  else{link.style.display='none';}
+}
+document.getElementById('f_phone').addEventListener('input',syncPhone);
+
 const OBJ=[
  ['« J\'ai déjà quelqu\'un / une agence pour ça »','Top, c\'est que vous êtes déjà dans une logique de croissance. Ils vous ramènent combien de clients par mois concrètement ? … Ce que je propose vient se brancher là-dessus sans doublon. Je vous montre en 15 min, vous comparez, et vous gardez le meilleur.'],
  ['« Ça coûte combien ? »','Ça dépend de ce dont vous avez besoin, c\'est pour ça que je veux pas vous balancer un prix au hasard. En 15 min je regarde votre situation et je vous fais une proposition claire. Si le retour est là, ça se décide tout seul. On cale quand ?'],
@@ -332,7 +342,7 @@ function buildNote(){
   const body=curOC!==null?OC[curOC][2]:'';
   document.getElementById('note').value=head+body;
 }
-function resetCall(){curOC=null;document.querySelectorAll('.oc').forEach(e=>e.classList.remove('active'));document.getElementById('recoStage').textContent='';['soc','ville','prenom','note','avis'].forEach(k=>document.getElementById(f[k]).value='');document.getElementById('f_phone').value='';document.getElementById('f_site').value='';document.getElementById('f_cat').value='';document.getElementById('phoneLink').style.display='none';document.getElementById('siteLink').style.display='none';document.getElementById('horsBtn').style.display='none';document.getElementById('angleHint').textContent='';GHL.contactId=null;GHL.oppId=null;refresh();}
+function resetCall(){curOC=null;document.querySelectorAll('.oc').forEach(e=>e.classList.remove('active'));document.getElementById('recoStage').textContent='';['soc','ville','prenom','note','avis'].forEach(k=>document.getElementById(f[k]).value='');document.getElementById('f_phone').value='';document.getElementById('phoneText').textContent='';document.getElementById('f_site').value='';document.getElementById('f_cat').value='';document.getElementById('phoneLink').style.display='none';document.getElementById('siteLink').style.display='none';document.getElementById('horsBtn').style.display='none';document.getElementById('angleHint').textContent='';GHL.contactId=null;GHL.oppId=null;refresh();}
 
 function setMode(m){
   MODE=m;
@@ -410,9 +420,7 @@ async function pickProspect(o){const c=o.contact||{};const st=document.getElemen
     }
   }catch(e){}
   const phone=document.getElementById('f_phone').value;
-  const link=document.getElementById('phoneLink');
-  if(phone){link.href='tel:'+phone;link.textContent='📞 Appeler '+phone;link.style.display='';}
-  else{link.style.display='none';}
+  syncPhone();
   fillExtra(phone);
   refresh();
   st.textContent='Fiche chargée : '+(o.name||c.name||'');
